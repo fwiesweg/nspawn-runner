@@ -246,10 +246,16 @@ class Machine:
         The last command is run with exec, so this function, when
         successful, never returns and destroys the calling process
         """
+
+        vars = ["--setenv=NSPAWN_RUNNER_MACHINE_" + var
+                for var in subprocess.run(['machinectl', 'show', self.machine_name],
+                                          check = True, text=True, stdout = subprocess.PIPE).stdout.split('\n')
+                if '=' in var]
+
         cmd = [
-            "systemd-run", "--quiet", "--pipe", "--wait",
-            f"--machine={self.machine_name}", shell
-        ]
+                  "systemd-run", "--quiet", "--pipe", "--wait",
+                  f"--machine={self.machine_name}"
+              ] + vars + [ shell ]
 
         log.info("Running %s", " ".join(shlex.quote(c) for c in cmd))
         with open(script, "rb") as fd:
