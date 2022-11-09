@@ -2,15 +2,17 @@
 
 from __future__ import annotations
 from typing import Optional, List, Dict, Any, Set
+
 import argparse
-import logging
-import subprocess
-import tempfile
 import json
+import logging
 import os
 import sys
 import shlex
 import shutil
+import subprocess
+import tempfile
+import time
 
 log = logging.getLogger("nspawn-runner")
 
@@ -298,7 +300,11 @@ class OverlayMachine(Machine):
                 raise Fail(f"Run script exited with code {res.returncode}")
         finally:
             if os.path.exists(self.overlay_dir):
-                shutil.rmtree(self.overlay_dir)
+                try:
+                    shutil.rmtree(self.overlay_dir)
+                except OSError:
+                    time.sleep(10) # wait a few seconds, some files seem to still be in use
+                    shutil.rmtree(self.overlay_dir)
 
 
 class BtrfsMachine(Machine):
