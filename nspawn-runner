@@ -402,7 +402,8 @@ class Chroot:
         Login is done with exec, so this function, when successful, never
         returns and destroys the calling process
         """
-        cmd = ["systemd-nspawn", "--directory", self.chroot_dir] + self.config.get('args', [])
+        args = self.config.get('maintenance_args', self.config.get('args', []))
+        cmd = ["systemd-nspawn", "--directory", self.chroot_dir] + args
         log.info("Running %s", " ".join(shlex.quote(c) for c in cmd))
         os.execvp(cmd[0], cmd)
 
@@ -469,6 +470,8 @@ class Chroot:
             return
 
         with tempfile.TemporaryDirectory() as workdir:
+            args = self.config.get('maintenance_args', self.config.get('args', []))
+
             # Write the chroot hack script
             # See https://www.enricozini.org/blog/2021/debian/nspawn-chroot-maintenance
             chroot_cmd = os.path.join(workdir, "nspawn-chroot")
@@ -481,7 +484,7 @@ class Chroot:
                     'systemd-nspawn',
                     '--console=pipe',
                     '-qD', "$chroot",
-                    shlex.join(self.config.get('args', [])),
+                    shlex.join(args),
                     '--', '"$@"'
                 ]), file=fd)
                 os.fchmod(fd.fileno(), 0o755)
